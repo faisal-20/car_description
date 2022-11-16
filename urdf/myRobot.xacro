@@ -1,0 +1,293 @@
+<?xml version="1.0"?>
+<robot name="myRobot" xmlns:xacro="http://ros.org/wiki/xacro">
+
+<!-- Import xacro files -->
+  <xacro:include filename="$(find car_description)/urdf/materials.xacro"/>
+  <xacro:include filename="$(find car_description)/urdf/rplidar.xacro"/>
+  <xacro:include filename="$(find car_description)/urdf/kinect.xacro"/>
+  <xacro:include filename="$(find car_description)/urdf/inertial_macros.xacro"/>
+  
+  <!-- variables or properties -->
+    <xacro:property name="chassis_length" value="0.35"/>
+    <xacro:property name="chassis_width" value="0.09"/>
+    <xacro:property name="chassis_height" value="0.04"/>
+    <xacro:property name="chassis_mass" value="1"/>
+
+    <xacro:property name="wheel_radius" value="0.06"/>
+    <xacro:property name="wheel_thickness" value="0.055"/>
+    <xacro:property name="wheel_mass" value="0.05"/>
+    <xacro:property name="wheel_offset_x" value="0.226"/>
+    <xacro:property name="wheel_offset_y" value="0.1485"/>
+    <xacro:property name="wheel_offset_z" value="0.01"/>
+
+    <xacro:property name="rear_wheel_base_length" value="0.16"/>
+    <xacro:property name="rear_wheel_base_radius" value="0.02"/>
+
+    <xacro:property name="front_wheel_base_length" value="0.16"/>
+    <xacro:property name="front_wheel_base_radius" value="0.02"/>
+       
+       <!-- materials -->
+<material name="white">
+        <color rgba="1 1 1 1" />
+    </material>
+
+    <material name="orange">
+        <color rgba="1 0.3 0.1 1"/>
+    </material>
+
+    <material name="blue">
+        <color rgba="0.2 0.2 1 1"/>
+    </material>
+
+    <material name="black">
+        <color rgba="0.1 0.1 0.1 1"/>
+    </material>
+
+    <material name="red">
+        <color rgba="1 0 0 1"/>
+    </material>
+
+    <!-- ================== base link =========== -->
+  <link name="base_link">
+            <visual>
+            <origin xyz="0 0 ${wheel_radius}"/>
+            <axis xyz="0 1 0" rpy="0 0 0"/>
+            <geometry>
+                <box size="0.01 0.01 0.01 "/>
+            </geometry>
+            <material name="white"/>
+        </visual>
+        <collision>
+            <origin xyz="0 0 ${wheel_radius}"/>
+            <geometry>
+                <box size="0.01 0.01 0.01"/>
+            </geometry>
+        </collision>
+  </link> 
+  
+  <!-- ============ Chassis ====================-->
+  <joint name="chassis_joint" type="fixed">
+        <parent link="base_link"/>
+        <child link="chassis"/>
+        <origin xyz="0 0 ${wheel_radius}"/>
+  </joint>
+  
+     <link name="chassis">
+        <visual>
+            <origin xyz="0 0 0"/>
+            <geometry>
+                <box size="${chassis_length} ${chassis_width} ${wheel_radius}"/>
+            </geometry>
+            <material name="orange"/>
+        </visual>
+        <collision>
+            <origin xyz="${chassis_length} 0 ${wheel_radius}"/>
+            <geometry>
+                <box size="${chassis_length} ${chassis_width} ${chassis_height}"/>
+            </geometry>
+        </collision>
+        <xacro:inertial_box mass="0.5" x="${chassis_length}" y="${chassis_width}" z="${chassis_height}">
+            <origin xyz="${chassis_length} 0 ${chassis_height/2}" rpy="0 0 0"/>
+        </xacro:inertial_box>
+    </link>
+    
+   <gazebo reference="chassis"> 
+        <!--Stiffness -->  
+        <kp>1000000.0</kp> 
+        <!--Dampening-->  
+        <kd>0.1</kd> 
+        <dampingFactor>0</dampingFactor> 
+        <material>Gazebo/White</material> 
+        <selfCollide>true</selfCollide> 
+        <turnGravityOff>false</turnGravityOff> 
+        <mu1 value="0.1"/> 
+        <mu2 value="0.1"/> 
+        <fdir1 value="0 0 0"/> 
+  </gazebo>
+
+<!-- =============== rear wheel base ==============-->
+    <joint name="rear_wheel_base_joint" type="fixed">
+            <parent link="chassis"/>
+            <child link="rear_wheel_base"/>
+            <origin xyz="-${chassis_length/2-rear_wheel_base_radius-0.02} 0 0" rpy="-${pi/2} 0 0"/>
+    </joint>
+   
+    <link name="rear_wheel_base">
+    <visual>
+        <geometry>
+            <cylinder length="${rear_wheel_base_length}" radius="${rear_wheel_base_radius}"/>
+        </geometry>
+        <material name="black"/>
+    </visual>
+    <collision>
+        <origin xyz="0 0 0"/>
+        <geometry>
+            <cylinder length="${rear_wheel_base_length}" radius="${rear_wheel_base_radius}"/>
+        </geometry>
+    </collision>
+  </link>
+
+    <gazebo reference="rear_wheel_base">
+        <material>Gazebo/Black</material>
+    </gazebo>
+  
+  <!-- ============rear left wheel============== -->
+    <joint type="continuous" name="rear_left_wheel_hinge">
+        <origin xyz="0 0 ${rear_wheel_base_length/2}" rpy="0 0 ${pi/2}"/>
+        <child link="rear_left_wheel"/>
+        <parent link="rear_wheel_base"/>
+        <axis xyz="0 1 0" rpy="0 0 0"/>
+        <limit effort="1" velocity="10"/>
+        <joint_properties damping="5.0" friction="1.0"/>
+    </joint>
+
+    <link name="rear_left_wheel">
+         <visual>
+            <geometry>
+                <cylinder radius="${wheel_radius}" length="${wheel_thickness}"/>
+            </geometry>
+            <material name="black"/>
+        </visual>
+        <collision>
+            <geometry>
+                <sphere radius="${wheel_radius}"/>
+            </geometry>
+        </collision>
+        <xacro:inertial_cylinder mass="${wheel_mass}" length="${wheel_thickness}" radius="${wheel_radius}">
+            <origin xyz="0 0 0" rpy="0 0 0"/>
+        </xacro:inertial_cylinder>
+    </link>
+
+    <gazebo reference="rear_left_wheel">
+        <material>Gazebo/black</material>
+    </gazebo>
+  
+  <!-- ============rear right wheel============-->
+  <joint type="continuous" name="rear_right_wheel_hinge">
+        <origin xyz="0 0 -${rear_wheel_base_length/2}" rpy="0 0 ${pi/2}"/>
+        <child link="rear_right_wheel"/>
+        <parent link="rear_wheel_base"/>
+        <axis xyz="0 1 0" rpy="0 0 0"/>
+        <limit effort="1" velocity="10"/>
+        <joint_properties damping="5.0" friction="1.0"/>
+    </joint>
+
+    <link name="rear_right_wheel">
+         <visual>
+            <geometry>
+                <cylinder radius="${wheel_radius}" length="${wheel_thickness}"/>
+            </geometry>
+            <material name="black"/>
+        </visual>
+        <collision>
+            <geometry>
+                <sphere radius="${wheel_radius}"/>
+            </geometry>
+        </collision>
+        <xacro:inertial_cylinder mass="${wheel_mass}" length="${wheel_thickness}" radius="${wheel_radius}">
+            <origin xyz="0 0 0" rpy="0 0 0"/>
+        </xacro:inertial_cylinder>
+    </link>
+
+    <gazebo reference="rear_right_wheel">
+        <material>Gazebo/black</material>
+    </gazebo>
+  
+
+<!-- =============== front wheel base ==============-->
+    <joint name="front_wheel_base_joint" type="fixed">
+            <parent link="chassis"/>
+            <child link="front_wheel_base"/>
+            <origin xyz="${chassis_length/2-front_wheel_base_radius-0.02} 0 0" rpy="-${pi/2} 0 0"/>
+    </joint>
+   
+    <link name="front_wheel_base">
+    <visual>
+        <geometry>
+            <cylinder length="${front_wheel_base_length}" radius="${front_wheel_base_radius}"/>
+        </geometry>
+        <material name="black"/>
+    </visual>
+    <collision>
+        <origin xyz="0 0 0"/>
+        <geometry>
+            <cylinder length="${front_wheel_base_length}" radius="${front_wheel_base_radius}"/>
+        </geometry>
+    </collision>
+  </link>
+
+    <gazebo reference="front_wheel_base">
+        <material>Gazebo/Black</material>
+    </gazebo>
+  
+  <!-- ============front left wheel============== -->
+    <joint type="continuous" name="front_left_wheel_hinge">
+        <origin xyz="0 0 ${front_wheel_base_length/2}" rpy="0 0 ${pi/2}"/>
+        <child link="front_left_wheel"/>
+        <parent link="front_wheel_base"/>
+        <axis xyz="0 1 0" rpy="0 0 0"/>
+        <limit effort="1" velocity="10"/>
+        <joint_properties damping="5.0" friction="1.0"/>
+    </joint>
+
+    <link name="front_left_wheel">
+         <visual>
+            <geometry>
+                <cylinder radius="${wheel_radius}" length="${wheel_thickness}"/>
+            </geometry>
+            <material name="black"/>
+        </visual>
+        <collision>
+            <geometry>
+                <sphere radius="${wheel_radius}"/>
+            </geometry>
+        </collision>
+        <xacro:inertial_cylinder mass="${wheel_mass}" length="${wheel_thickness}" radius="${wheel_radius}">
+            <origin xyz="0 0 0" rpy="0 0 0"/>
+        </xacro:inertial_cylinder>
+    </link>
+
+    <gazebo reference="front_left_wheel">
+        <material>Gazebo/black</material>
+    </gazebo>
+  
+  <!-- ============front right wheel============-->
+  <joint type="continuous" name="front_right_wheel_hinge">
+        <origin xyz="0 0 -${front_wheel_base_length/2}" rpy="0 0 ${pi/2}"/>
+        <child link="front_right_wheel"/>
+        <parent link="front_wheel_base"/>
+        <axis xyz="0 1 0" rpy="0 0 0"/>
+        <limit effort="1" velocity="10"/>
+        <joint_properties damping="5.0" friction="1.0"/>
+    </joint>
+
+    <link name="front_right_wheel">
+         <visual>
+            <geometry>
+                <cylinder radius="${wheel_radius}" length="${wheel_thickness}"/>
+            </geometry>
+            <material name="black"/>
+        </visual>
+        <collision>
+            <geometry>
+                <sphere radius="${wheel_radius}"/>
+            </geometry>
+        </collision>
+        <xacro:inertial_cylinder mass="${wheel_mass}" length="${wheel_thickness}" radius="${wheel_radius}">
+            <origin xyz="0 0 0" rpy="0 0 0"/>
+        </xacro:inertial_cylinder>
+    </link>
+
+    <gazebo reference="front_right_wheel">
+        <material>Gazebo/black</material>
+    </gazebo>
+
+    <gazebo>
+            <plugin name="gazebo_ros_control" filename="libgazebo_ros_control.so">
+            <robotNamespace>/myRobot</robotNamespace>
+                <legacyModeNS>true</legacyModeNS>
+            </plugin>
+    </gazebo>
+
+
+</robot>

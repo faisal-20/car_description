@@ -1,0 +1,128 @@
+<?xml version="1.0"?>
+<robot xmlns:xacro="http://www.ros.org/wiki/xacro" >
+
+    <xacro:include filename="$(find car_description)/urdf/inertial_macros.xacro"/>
+    <xacro:include filename="$(find car_description)/urdf/materials.xacro"/>
+
+    <xacro:property name="base_length" value="0.1"/>
+    <xacro:property name="base_width" value="0.1"/>
+    <xacro:property name="base_height" value="0.01"/>
+    <xacro:property name="base_mass" value="0.005"/>
+    
+    <xacro:property name="piller_length" value="0.15"/>
+    <xacro:property name="piller_radius" value="0.02"/>
+
+    <link name="rplidar_link">
+        <visual>
+            <origin xyz="0 0 0" rpy="${pi/2} 0 0"/>
+            <geometry>
+                <mesh filename="package://car_description/meshes/sensors/rplidar.STL" scale="0.001 0.001 0.001"/>
+            </geometry>
+            <material name="black"/>
+        </visual>
+        <collision>
+            <geometry>
+                <mesh filename="package://car_description/meshes/sensors/rplidar.STL" scale="0.001 0.001 0.001"/>
+            </geometry>
+        </collision>
+    </link>
+
+    <joint name="laser_joint" type="fixed">
+        <parent link="rplidar_link"/>
+        <child link="laser"/>
+        <origin xyz="0 0 0.05" rpy="0 0 -${pi/2}"/>
+    </joint>
+
+    <link name="laser">
+    
+    </link>
+
+    <joint name="rplidar_to_base_joint" type="fixed">
+        <parent link="rplidar_base"/>
+        <child link="rplidar_link"/>
+        <origin xyz="-0.04 0.03 ${base_height/2}" rpy="0 0 0"/>
+    </joint>
+    
+     <link name="rplidar_base">
+        <visual>
+            <origin xyz="0 0 0"/>
+            <geometry>
+                <box size="${base_length} ${base_width} ${base_height}"/>
+            </geometry>
+            <material name="orange"/>
+        </visual>
+        <collision>
+            <origin xyz="0 0 0"/>
+            <geometry>
+                <box size="${base_length} ${base_width} ${base_height}"/>
+            </geometry>
+        </collision>
+        <xacro:inertial_box mass="${base_mass}" x="0" y="0" z="0">
+            <origin xyz="0 0 0" rpy="0 0 0"/>
+        </xacro:inertial_box>
+    </link>
+    
+    <gazebo reference="rplidar_base">
+        <material>Gazebo/black</material>
+    </gazebo>
+
+    <joint name="piller_base_joint" type="fixed">
+        <parent link="piller_link"/>
+        <child link="rplidar_base"/>
+        <origin xyz="0 0 ${piller_length/2}" rpy="0 0 0"/>
+    </joint>
+
+<link name="piller_link">
+    <visual>
+        <geometry>
+            <cylinder length="${piller_length}" radius="${piller_radius}"/>
+        </geometry>
+        <material name="blue"/>
+    </visual>
+    <collision>
+        <origin xyz="0 0 0"/>
+        <geometry>
+            <cylinder length="${piller_length}" radius="${piller_radius}"/>
+        </geometry>
+    </collision>
+  </link>
+
+    <joint name="piller_chassis_joint" type="fixed">
+        <parent link="chassis"/>
+        <child link="piller_link"/>
+        <origin xyz="-0.1 0 0.10" rpy="0 0 0"/>
+    </joint>
+
+
+    
+ <gazebo reference="rplidar_link">
+        <material>Gazebo/Red</material>
+ 
+        <sensor name="laser" type="ray">
+            <pose> 0 0 0 0 0 0 </pose>
+            <visualize>true</visualize>
+            <update_rate>10</update_rate>
+            <ray>
+                <scan>
+                    <horizontal>
+                        <samples>360</samples>
+                        <min_angle>-3.14</min_angle>
+                        <max_angle>3.14</max_angle>
+                    </horizontal>
+                </scan>
+                <range>
+                    <min>0.3</min>
+                    <max>12</max>
+                </range>
+            </ray>
+            <plugin name="laser_controller" filename="libgazebo_ros_ray_sensor.so">
+                <ros>
+                    <argument>~/out:=scan</argument>
+                </ros>
+                <output_type>sensor_msgs/LaserScan</output_type>
+                <frame_name>laser_frame</frame_name>
+            </plugin>
+        </sensor>
+    </gazebo>
+
+</robot>
